@@ -322,12 +322,27 @@ func (ve *validateError) Error() string {
 	return fmt.Sprintf("status code %d: %v", ve.StatusCode(), ve.ErrorMessage())
 }
 
+type IgnoreValidateFunc func(argT reflect.Type, rv reflect.Value) bool
+
+type RequestValidatorOption struct {
+	IgnoreValidateFunc IgnoreValidateFunc
+}
+
 // RequestValidator checks request object validity.
-func RequestValidator(validator Validator) MiddlewareFunc {
+func RequestValidator(validator Validator, options... *RequestValidatorOption) MiddlewareFunc {
 	if validator == nil {
 		v := golidator.NewValidator()
 		v.SetTag("ucon")
 		validator = v
+	}
+
+	ignoreFunc := func(options []*RequestValidatorOption, argT reflect.Type, rv reflect.Value) bool {
+		for _, option := range options {
+			if option.IgnoreValidateFunc != nil && option.IgnoreValidateFunc(argT, rv) {
+				return true
+			}
+		}
+		return false
 	}
 
 	return func(b *Bubble) error {
@@ -341,7 +356,12 @@ func RequestValidator(validator Validator) MiddlewareFunc {
 			}
 
 			rv := b.Arguments[idx]
-			if rv.IsNil() || !rv.IsValid() {
+
+			if ignoreFunc(options, argT, rv) {
+				continue
+			}
+
+			if !rv.IsValid() || rv.IsNil() {
 				continue
 			}
 			v := rv.Interface()

@@ -43,8 +43,8 @@ func (ve *validateError) Error() string {
 }
 
 // RequestValidator checks request object validity by swagger tag.
-func RequestValidator() ucon.MiddlewareFunc {
-	return ucon.RequestValidator(DefaultValidator)
+func RequestValidator(options... *ucon.RequestValidatorOption) ucon.MiddlewareFunc {
+	return ucon.RequestValidator(DefaultValidator, options...)
 }
 
 func init() {

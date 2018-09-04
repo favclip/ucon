@@ -253,10 +253,40 @@ type TargetRequestValidate struct {
 	ID int `ucon:"min=3"`
 }
 
+type IgnoreRequestValidate struct {
+	ID int `ucon:"min=4"`
+}
+
+
 func TestRequestValidator_valid(t *testing.T) {
 	b, _ := MakeMiddlewareTestBed(t, RequestValidator(nil), func(req *TargetRequestValidate) {
 	}, nil)
 	b.Arguments[0] = reflect.ValueOf(&TargetRequestValidate{ID: 3})
+
+	err := b.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := b.W.(*httptest.ResponseRecorder)
+	if rr.Code != 200 {
+		t.Errorf("unexpected: %v", rr.Code)
+	}
+}
+
+func TestRequestValidator_validWithIgnore(t *testing.T) {
+
+	ignoreType := reflect.TypeOf((*IgnoreRequestValidate)(nil))
+
+	b, _ := MakeMiddlewareTestBed(t, RequestValidator(nil, &RequestValidatorOption{IgnoreValidateFunc: func(argT reflect.Type, rv reflect.Value) bool {
+		if ignoreType.AssignableTo(argT) {
+			return true
+		}
+		return false
+	}}), func(req *TargetRequestValidate, req2 *IgnoreRequestValidate) {
+	}, nil)
+	b.Arguments[0] = reflect.ValueOf(&TargetRequestValidate{ID: 3})
+	b.Arguments[1] = reflect.ValueOf(&IgnoreRequestValidate{ID: 4})
 
 	err := b.Next()
 	if err != nil {
