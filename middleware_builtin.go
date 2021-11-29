@@ -59,7 +59,7 @@ func (he *httpError) StatusCode() int {
 }
 
 func (he *httpError) ErrorMessage() interface{} {
-	return he
+	return he.Message
 }
 
 func (he *httpError) Error() string {
