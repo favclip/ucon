@@ -132,6 +132,7 @@ type HandlerInfo struct {
 
 // Options is a container of optional settings to configure a plugin.
 type Options struct {
+	SwaggerJSONPath        string
 	Object                 *Object
 	DefinitionNameModifier func(refT reflect.Type, defName string) string
 	IgnoreRoute            func(rd *ucon.RouteDefinition) bool
@@ -141,6 +142,10 @@ type Options struct {
 func NewPlugin(opts *Options) *Plugin {
 	if opts == nil {
 		opts = &Options{}
+	}
+
+	if opts.SwaggerJSONPath == "" {
+		opts.SwaggerJSONPath = "/api/swagger.json"
 	}
 
 	so := opts.Object
@@ -187,7 +192,7 @@ func (p *Plugin) HandlersScannerProcess(m *ucon.ServeMux, rds []*ucon.RouteDefin
 	}
 
 	// supply swagger.json endpoint
-	m.HandleFunc("GET", "/api/swagger.json", func(w http.ResponseWriter, r *http.Request) *Object {
+	m.HandleFunc("GET", p.options.SwaggerJSONPath, func(w http.ResponseWriter, r *http.Request) *Object {
 		return soConstructor.object
 	})
 
